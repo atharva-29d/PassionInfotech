@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+neo4j
+pandas
+scikit-learn
+joblib
+torch
+torch_geometric
+kafka-python
+python-dotenv

@@ -1,0 +1,90 @@
+body {
+    font-family: "Segoe UI", Arial;
+    background: #f3f6fb;
+    margin: 0;
+    color: #1b1b1b;
+}
+
+.header {
+    background: #005a9e;
+    color: white;
+    padding: 20px;
+    font-size: 28px;
+}
+
+.sub {
+    font-size: 16px;
+    opacity: .9;
+}
+
+.container {
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px #ccc;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.metric {
+    background: #e8f1fb;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.metric h2 {
+    color: #005a9e;
+}
+
+button {
+    background: #0078d4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td, th {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+th {
+    background: #005a9e;
+    color: white;
+}
+
+.progress {
+    background: #ddd;
+    border-radius: 20px;
+}
+
+.progress div {
+    background: #0078d4;
+    color: white;
+    padding: 8px;
+    border-radius: 20px;
+    text-align: center;
+}

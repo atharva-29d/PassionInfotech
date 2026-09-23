@@ -1,0 +1,12 @@
+backend/ingestion/.env
+backend/ingestion/data/
+backend/features/data/
+backend/features/artifacts/*.pkl
+backend/models/anomaly_detector/artifacts/*.pkl
+backend/models/gnn/artifacts/*
+backend/graph/.env
+*.pt
+*.pkl
+*.h5
+__pycache__/
+.venv/
