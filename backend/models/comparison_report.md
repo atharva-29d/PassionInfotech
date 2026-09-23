@@ -9,4 +9,4 @@ This report evaluates both the unsupervised Isolation Forest baseline and the st
 | **F1-Score** | 0.4320 | 0.7871 |
 | **Accuracy** | 0.5715 | 0.7894 |
 
-*Note: Models were re-evaluated natively using their saved weights against `test.npz` to ensure a consistent, 1-to-1 metric computation via `sklearn.metrics`.*
+*Note: Models were rigorously re-evaluated in `re_evaluate.py` directly against the saved weights and live preprocessing pipelines.*

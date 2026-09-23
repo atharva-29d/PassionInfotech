@@ -101,102 +101,105 @@ def main():
     
     for message in consumer:
         event = message.value
-        
-        # Insert into network_event
-        with engine.begin() as conn:
-            conn.execute(
-                text("""
-                INSERT INTO network_event
-                    (event_id, protocol_type, service, flag, src_bytes, dst_bytes,
-                     duration, label, is_attack, difficulty, raw_features, source_row_id, split)
-                VALUES
-                    (:event_id, :protocol_type, :service, :flag, :src_bytes, :dst_bytes,
-                     :duration, :label, :is_attack, :difficulty, :raw_features, :source_row_id, :split)
-                """),
-                {
-                    "event_id": event["event_id"],
-                    "protocol_type": event["protocol_type"],
-                    "service": event["service"],
-                    "flag": event["flag"],
-                    "src_bytes": event["src_bytes"],
-                    "dst_bytes": event["dst_bytes"],
-                    "duration": event["duration"],
-                    "label": event["label"],
-                    "is_attack": event["is_attack"],
-                    "difficulty": event["difficulty"],
-                    "raw_features": json.dumps(event["raw_features"]),
-                    "source_row_id": event["source_row_id"],
-                    "split": "live"
-                }
-            )
+        try:
             
-        # Reconstruct full row for pipeline
-        row_dict = {**event, **event["raw_features"]}
-        df = pd.DataFrame([row_dict])
-        
-        # Transform features
-        X = feature_pipeline.transform(df[cat_cols + num_cols])
-        
-        # IsolationForest Inference
-        if_pred_raw = if_model.predict(X)[0]
-        if_pred_label = "anomaly" if if_pred_raw == -1 else "normal"
-        if_score = float(if_model.decision_function(X)[0])
-        
-        # GNN Inference
-        X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
-        x_dict = {
-            'event': X_tensor,
-            'host': torch.zeros((1, 3), dtype=torch.float32).to(device)
-        }
-        edge_index_dict = {
-            ('host', 'communicates_with', 'host'): torch.empty((2, 0), dtype=torch.long).to(device),
-            ('host', 'rev_communicates_with', 'host'): torch.empty((2, 0), dtype=torch.long).to(device),
-            ('event', 'generated_by', 'host'): torch.tensor([[0], [0]], dtype=torch.long).to(device),
-            ('host', 'rev_generated_by', 'event'): torch.tensor([[0], [0]], dtype=torch.long).to(device)
-        }
-        
-        with torch.no_grad():
-            out = gnn_model(x_dict, edge_index_dict)
-            gnn_prob = F.softmax(out, dim=-1)[0, 1].item()
-            gnn_pred_class = "anomaly" if gnn_prob > 0.5 else "normal"
+            # Insert into network_event
+            with engine.begin() as conn:
+                conn.execute(
+                    text("""
+                    INSERT INTO network_event
+                        (event_id, protocol_type, service, flag, src_bytes, dst_bytes,
+                         duration, label, is_attack, difficulty, raw_features, source_row_id, split)
+                    VALUES
+                        (:event_id, :protocol_type, :service, :flag, :src_bytes, :dst_bytes,
+                         :duration, :label, :is_attack, :difficulty, :raw_features, :source_row_id, :split)
+                    """),
+                    {
+                        "event_id": event["event_id"],
+                        "protocol_type": event["protocol_type"],
+                        "service": event["service"],
+                        "flag": event["flag"],
+                        "src_bytes": event["src_bytes"],
+                        "dst_bytes": event["dst_bytes"],
+                        "duration": event["duration"],
+                        "label": event["label"],
+                        "is_attack": event["is_attack"],
+                        "difficulty": event["difficulty"],
+                        "raw_features": json.dumps(event["raw_features"]),
+                        "source_row_id": event["source_row_id"],
+                        "split": "live"
+                    }
+                )
+                
+            # Reconstruct full row for pipeline
+            row_dict = {**event, **event["raw_features"]}
+            df = pd.DataFrame([row_dict])
             
-        # Write predictions
-        with engine.begin() as conn:
-            conn.execute(
-                text("""
-                INSERT INTO anomaly_detection_result
-                    (detection_id, event_id, model_id, anomaly_score, prediction, detection_time)
-                VALUES
-                    (:detection_id, :event_id, :model_id, :anomaly_score, :prediction, :detection_time)
-                """),
-                {
-                    "detection_id": str(uuid.uuid4()),
-                    "event_id": event["event_id"],
-                    "model_id": actual_model_id,
-                    "anomaly_score": if_score,
-                    "prediction": if_pred_label,
-                    "detection_time": datetime.now()
-                }
-            )
+            # Transform features
+            X = feature_pipeline.transform(df[cat_cols + num_cols])
             
-            conn.execute(
-                text("""
-                INSERT INTO gnn_detection_result
-                    (event_id, predicted_class, confidence, model_version)
-                VALUES
-                    (:event_id, :predicted_class, :confidence, :model_version)
-                """),
-                {
-                    "event_id": event["event_id"],
-                    "predicted_class": gnn_pred_class,
-                    "confidence": gnn_prob,
-                    "model_version": "gnn_v1.0_live"
-                }
-            )
+            # IsolationForest Inference
+            if_pred_raw = if_model.predict(X)[0]
+            if_pred_label = "anomaly" if if_pred_raw == -1 else "normal"
+            if_score = float(if_model.decision_function(X)[0])
             
-        events_processed += 1
-        elapsed = time.time() - start_time
-        print(f"Processed {event['event_id']} | IF: {if_pred_label} | GNN: {gnn_pred_class} ({(events_processed/elapsed):.1f} eps)")
+            # GNN Inference
+            X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
+            x_dict = {
+                'event': X_tensor,
+                'host': torch.zeros((1, 3), dtype=torch.float32).to(device)
+            }
+            edge_index_dict = {
+                ('host', 'communicates_with', 'host'): torch.empty((2, 0), dtype=torch.long).to(device),
+                ('host', 'rev_communicates_with', 'host'): torch.empty((2, 0), dtype=torch.long).to(device),
+                ('event', 'generated_by', 'host'): torch.tensor([[0], [0]], dtype=torch.long).to(device),
+                ('host', 'rev_generated_by', 'event'): torch.tensor([[0], [0]], dtype=torch.long).to(device)
+            }
+            
+            with torch.no_grad():
+                out = gnn_model(x_dict, edge_index_dict)
+                gnn_prob = F.softmax(out, dim=-1)[0, 1].item()
+                gnn_pred_class = "anomaly" if gnn_prob > 0.5 else "normal"
+                
+            # Write predictions
+            with engine.begin() as conn:
+                conn.execute(
+                    text("""
+                    INSERT INTO anomaly_detection_result
+                        (detection_id, event_id, model_id, anomaly_score, prediction, detection_time)
+                    VALUES
+                        (:detection_id, :event_id, :model_id, :anomaly_score, :prediction, :detection_time)
+                    """),
+                    {
+                        "detection_id": str(uuid.uuid4()),
+                        "event_id": event["event_id"],
+                        "model_id": actual_model_id,
+                        "anomaly_score": if_score,
+                        "prediction": if_pred_label,
+                        "detection_time": datetime.now()
+                    }
+                )
+                
+                conn.execute(
+                    text("""
+                    INSERT INTO gnn_detection_result
+                        (event_id, predicted_class, confidence, model_version)
+                    VALUES
+                        (:event_id, :predicted_class, :confidence, :model_version)
+                    """),
+                    {
+                        "event_id": event["event_id"],
+                        "predicted_class": gnn_pred_class,
+                        "confidence": gnn_prob,
+                        "model_version": "gnn_v1.0_live"
+                    }
+                )
+                
+            events_processed += 1
+            elapsed = time.time() - start_time
+            print(f"Processed {event['event_id']} | IF: {if_pred_label} | GNN: {gnn_pred_class} ({(events_processed/elapsed):.1f} eps)")
 
+        except Exception as e:
+            print(f"ERROR: Failed to process event {event.get('event_id', 'unknown')}: {str(e)}")
 if __name__ == "__main__":
     main()

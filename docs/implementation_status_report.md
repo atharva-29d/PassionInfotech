@@ -17,7 +17,7 @@ The system is actively capable of ingesting live network traffic, identifying co
 - **Baseline Anomaly Detection:** Implemented an `IsolationForest` model to establish a baseline for identifying statistically anomalous network patterns.
 - **Graph Neural Network (GNN) Classifier:** Engineered and trained a `GraphSAGE` (PyTorch Geometric) deep learning model that classifies events based on structural graph relationships, not just isolated features. 
 - **Model Evaluation:** The GNN achieved a classification accuracy of **78.9%** and recall of **68.4%**, vastly outperforming the baseline IsolationForest which achieved only 28.6% recall.
-- **Real-Time Inference:** Both models are successfully serialized and deployed in the streaming pipeline for live, millisecond-latency predictions.
+- **Real-Time Inference:** Both models are successfully serialized and deployed in the streaming pipeline for live, ~130ms latency predictions (averaging 132.7ms end-to-end).
 
 ### B. Real-Time Streaming Data Pipeline
 - **Apache Kafka Infrastructure:** Deployed a native Apache Kafka instance (KRaft mode) to handle high-throughput, low-latency network telemetry.
