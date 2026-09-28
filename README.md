@@ -40,7 +40,10 @@ Ensure you configure the environment variables properly. Refer to:
 
 ### 3. Running the Stack
 1. **Start Infrastructure (Databases & Kafka):**
-   *(Ensure your Docker containers for Postgres, Neo4j, and Kafka are running)*
+   Open a terminal in the root folder and start the Docker containers:
+   ```bash
+   docker-compose up -d
+   ```
 2. **Install Python Dependencies:**
    ```bash
    pip install -r requirements.txt

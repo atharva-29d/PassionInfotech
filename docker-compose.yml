@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: threat-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: threat_hunting
+    ports:
+      - "5433:5432" # Mapped to 5433 to avoid conflicts with local Postgres installs
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5
+    container_name: threat-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/12345678
+    ports:
+      - "7474:7474" # HTTP UI
+      - "7687:7687" # Bolt connection
+    volumes:
+      - neo4j_data:/data
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: threat-kafka
+    environment:
+      # KRaft configuration (No ZooKeeper required)
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  kafka_data:
